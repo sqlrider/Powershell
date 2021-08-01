@@ -211,7 +211,7 @@ else
     }
 }
 
-# Get key column length/nullability
+# Get key column(s) length/nullability and increment leaf and variable key counters
 
 foreach($col in $Column)
 {
@@ -237,7 +237,7 @@ foreach($col in $Column)
 
         $leafcolumns++
 
-        # Set null columns flag true if index column is nullable
+        # Set null columns flag true if index column is nullable (used for SQL < 2012)
         if($result.is_nullable)
         {
             $nullcolumns = $true
@@ -314,7 +314,7 @@ try
             Write-Output "Using nonunique clustering key of total $($rowlocatorlength) bytes with uniquifier"
         }
 
-        # If any null columns exist in clustering key and set flag if so
+        # Check if any null columns exist in clustering key and set flag if so
         if($clusteringkey.NullColumns -eq 1)
         {
             $nullcolumns = $true
@@ -385,7 +385,6 @@ if(($sqlversion -ge 11) -or ($nullcolumns -eq $true))
 }
 
 # Calculate variable-length overhead size
-
 if($variablecolumns -gt 0)
 {
     $variableoverheadsize = 2 + ($variablecolumns * 2) 
@@ -398,11 +397,12 @@ $indexsize = $keylength + $rowlocatorlength + $nullbitmap + $variableoverheadsiz
 
 Write-Output "Index row size is $($keylength) + $($rowlocatorlength) (locator) + $($nullbitmap) (null bitmap) + $($variableoverheadsize) (variable) + 1 (header) = $($indexsize) bytes"
 
+# Calculate leaf rows per page - adding 2 bytes to indexsize for slot array entry 
 $leafrowsperpage = [Math]::Floor(8096 / ($indexsize + 2))
 
 Write-Output "Leaf rows per page is $leafrowsperpage"
 
-# Fill pages if not specifying fillfactor
+# Use full pages if not specifying fillfactor
 if(!$Fillfactor)
 {
     $leafpages = [Math]::Ceiling($rowcount / $leafrowsperpage)
