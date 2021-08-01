@@ -1,4 +1,3 @@
-
 function Get-IndexSizeEstimate
 {
 <#
@@ -151,7 +150,7 @@ $query = "SELECT SUBSTRING(CONVERT(VARCHAR(128), SERVERPROPERTY('productversion'
 
 try
 {
-    $sqlversion = (Invoke-Sqlcmd -ServerInstance $Instance -Database master -Query $query -ConnectionTimeout 5 -QueryTimeout 5 -ErrorAction Stop).Version
+    [int]$sqlversion = (Invoke-Sqlcmd -ServerInstance $Instance -Database master -Query $query -ConnectionTimeout 5 -QueryTimeout 5 -ErrorAction Stop).Version
 
 
 }
@@ -369,7 +368,7 @@ catch
 Write-Output "Index contains $($leafcolumns) leaf columns total"
 
 
-if($nullcolumns -and $sqlversion -lt 11)
+if(($nullcolumns) -and ($sqlversion -lt 11))
 {
     Write-Output "Leaf record contains null columns"
 }
@@ -378,7 +377,7 @@ Write-Output "$($variablecolumns) total columns are variable-length"
     
 # Calculate null bitmap size
 # If version is >= 2012 or null columns exist, add null bitmap - else don't add
-if($sqlversion -ge 11 -or $nullcolumns -eq $true)
+if(($sqlversion -ge 11) -or ($nullcolumns -eq $true))
 {
     $nullbitmap = [Math]::Floor(2 + (($leafcolumns + 7) / 8))
 
